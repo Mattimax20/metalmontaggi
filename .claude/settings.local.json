@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Read(//tmp/**)",
+      "Bash(node -e \"const p=require\\('./node_modules/next/package.json'\\); console.log\\('Next.js:', p.version\\)\")"
+    ]
+  }
+}
