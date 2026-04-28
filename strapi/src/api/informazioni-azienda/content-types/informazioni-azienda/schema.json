@@ -1,0 +1,95 @@
+{
+  "kind": "singleType",
+  "collectionName": "informazioni_azienda",
+  "info": {
+    "singularName": "informazioni-azienda",
+    "pluralName": "informazioni-aziende",
+    "displayName": "Informazioni Azienda",
+    "description": "Tutti i contenuti del sito — testi, loghi, pagine, sezioni"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {},
+  "attributes": {
+
+    "nome_azienda":           { "type": "string" },
+    "logo":                   { "type": "media", "multiple": false, "allowedTypes": ["images"] },
+    "logo_negativo":          { "type": "media", "multiple": false, "allowedTypes": ["images"] },
+    "favicon":                { "type": "media", "multiple": false, "allowedTypes": ["images"] },
+    "piva":                   { "type": "string" },
+    "codice_fiscale":         { "type": "string" },
+
+    "indirizzo":              { "type": "string" },
+    "citta":                  { "type": "string" },
+    "cap":                    { "type": "string" },
+    "provincia":              { "type": "string" },
+    "regione":                { "type": "string" },
+    "telefono":               { "type": "string" },
+    "telefono_alternativo":   { "type": "string" },
+    "email":                  { "type": "email" },
+    "email_pec":              { "type": "email" },
+    "whatsapp":               { "type": "string" },
+    "orari_apertura":         { "type": "text" },
+    "coordinate_lat":         { "type": "decimal" },
+    "coordinate_lng":         { "type": "decimal" },
+
+    "facebook_url":           { "type": "string" },
+    "instagram_url":          { "type": "string" },
+    "linkedin_url":           { "type": "string" },
+
+    "hero_badge":             { "type": "string" },
+    "hero_titolo_riga1":      { "type": "string" },
+    "hero_titolo_accento":    { "type": "string" },
+    "hero_titolo_riga3":      { "type": "string" },
+    "hero_sottotitolo":       { "type": "text" },
+    "hero_cta_primario":      { "type": "string" },
+    "hero_cta_secondario":    { "type": "string" },
+    "hero_immagine":          { "type": "media", "multiple": false, "allowedTypes": ["images"] },
+
+    "stat_1_valore":          { "type": "string" },
+    "stat_1_label":           { "type": "string" },
+    "stat_2_valore":          { "type": "string" },
+    "stat_2_label":           { "type": "string" },
+    "stat_3_valore":          { "type": "string" },
+    "stat_3_label":           { "type": "string" },
+
+    "perche_noi_titolo":      { "type": "string" },
+    "perche_noi_sottotitolo": { "type": "text" },
+    "perche_noi_cta":         { "type": "string" },
+    "perche_noi_items":       { "type": "json" },
+
+    "cta_titolo":             { "type": "string" },
+    "cta_testo":              { "type": "text" },
+    "cta_bottone":            { "type": "string" },
+
+    "servizi_eyebrow":        { "type": "string" },
+    "servizi_titolo":         { "type": "string" },
+    "servizi_sottotitolo":    { "type": "text" },
+    "servizi_cta":            { "type": "string" },
+
+    "galleria_eyebrow":       { "type": "string" },
+    "galleria_titolo":        { "type": "string" },
+    "galleria_sottotitolo":   { "type": "text" },
+    "galleria_cta":           { "type": "string" },
+
+    "chi_siamo_eyebrow":      { "type": "string" },
+    "chi_siamo_titolo":       { "type": "string" },
+    "chi_siamo_intro":        { "type": "text" },
+    "chi_siamo_storia":       { "type": "richtext" },
+    "chi_siamo_immagini":     { "type": "media", "multiple": true, "allowedTypes": ["images"] },
+    "chi_siamo_timeline":     { "type": "json" },
+    "chi_siamo_valori_titolo":{ "type": "string" },
+    "chi_siamo_valori":       { "type": "json" },
+    "chi_siamo_processo_titolo": { "type": "string" },
+    "chi_siamo_processo":     { "type": "json" },
+    "anni_esperienza":        { "type": "integer" },
+    "numero_dipendenti":      { "type": "integer" },
+
+    "contatti_eyebrow":       { "type": "string" },
+    "contatti_titolo":        { "type": "string" },
+    "contatti_intro":         { "type": "text" },
+
+    "footer_slogan":          { "type": "text" },
+    "footer_copyright":       { "type": "string" },
+    "meta_descrizione":       { "type": "text" }
+  }
+}

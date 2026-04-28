@@ -1,0 +1,31 @@
+{
+  "name": "metalmontaggi-strapi",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Strapi CMS per Metal Montaggi — Leverano (LE)",
+  "scripts": {
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "build": "strapi build",
+    "strapi": "strapi"
+  },
+  "dependencies": {
+    "@strapi/strapi": "4.22.0",
+    "@strapi/plugin-users-permissions": "4.22.0",
+    "@strapi/plugin-i18n": "4.22.0",
+    "pg": "8.11.3",
+    "better-sqlite3": "9.4.3",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^5.3.4",
+    "styled-components": "^5.3.11"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0 <=20.x.x",
+    "npm": ">=6.0.0"
+  },
+  "strapi": {
+    "uuid": "f47ac10b-58cc-4372-a567-metalmontaggi1"
+  }
+}

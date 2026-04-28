@@ -1,0 +1,92 @@
+version: '3.8'
+
+# ============================================================
+#  Metal Montaggi — Stack di Sviluppo (hot-reload)
+#  Avvio: docker-compose -f docker-compose.dev.yml up --build
+# ============================================================
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: metalmontaggi-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: metalmontaggi_dev
+      POSTGRES_USER: strapi
+      POSTGRES_PASSWORD: strapi
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - metalmontaggi-dev-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U strapi -d metalmontaggi_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  strapi:
+    build:
+      context: ./strapi
+      dockerfile: Dockerfile.dev
+    container_name: metalmontaggi-strapi-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: metalmontaggi_dev
+      DATABASE_USERNAME: strapi
+      DATABASE_PASSWORD: strapi
+      DATABASE_SSL: "false"
+      # Valori dev — NON usare in produzione
+      APP_KEYS: devKey1base64,devKey2base64,devKey3base64,devKey4base64
+      API_TOKEN_SALT: devApiTokenSalt1234567890abcdefgh
+      ADMIN_JWT_SECRET: devAdminJwtSecret1234567890abcd
+      JWT_SECRET: devJwtSecret1234567890abcdefghij
+      TRANSFER_TOKEN_SALT: devTransferTokenSalt1234567890
+      ADMIN_EMAIL: admin@metalmontaggi.it
+      ADMIN_PASSWORD: Admin@123456
+      HOST: 0.0.0.0
+      PORT: 1337
+    volumes:
+      - ./strapi/src:/opt/app/src
+      - ./strapi/config:/opt/app/config
+      - ./strapi/public:/opt/app/public
+      - strapi_uploads_dev:/opt/app/public/uploads
+    ports:
+      - "1337:1337"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - metalmontaggi-dev-net
+
+  # ── Frontend React (hot-reload) ──────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: metalmontaggi-frontend-dev
+    restart: unless-stopped
+    environment:
+      VITE_STRAPI_URL: ""
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    ports:
+      - "3000:3000"
+    depends_on:
+      - strapi
+    networks:
+      - metalmontaggi-dev-net
+
+volumes:
+  postgres_data_dev:
+  strapi_uploads_dev:
+
+networks:
+  metalmontaggi-dev-net:
+    driver: bridge

@@ -1,0 +1,27 @@
+{
+  "kind": "collectionType",
+  "collectionName": "servizi",
+  "info": {
+    "singularName": "servizio",
+    "pluralName": "servizi",
+    "displayName": "Servizio",
+    "description": "Servizi offerti da Metal Montaggi"
+  },
+  "options": { "draftAndPublish": true },
+  "pluginOptions": {},
+  "attributes": {
+    "titolo":             { "type": "string", "required": true },
+    "slug":               { "type": "uid", "targetField": "titolo", "required": true },
+    "categoria":          { "type": "enumeration", "enum": ["fabbro", "serramenti", "carpenteria"], "required": true },
+    "icona_emoji":        { "type": "string" },
+    "descrizione_breve":  { "type": "string", "maxLength": 500 },
+    "descrizione":        { "type": "richtext" },
+    "immagine_copertina": { "type": "media", "multiple": false, "allowedTypes": ["images"] },
+    "galleria":           { "type": "media", "multiple": true,  "allowedTypes": ["images"] },
+    "sottocategorie":     { "type": "json" },
+    "caratteristiche":    { "type": "json" },
+    "ordine":             { "type": "integer", "default": 0 },
+    "in_evidenza":        { "type": "boolean", "default": false },
+    "attivo":             { "type": "boolean", "default": true }
+  }
+}

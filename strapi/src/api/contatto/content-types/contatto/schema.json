@@ -1,0 +1,59 @@
+{
+  "kind": "collectionType",
+  "collectionName": "contatti",
+  "info": {
+    "singularName": "contatto",
+    "pluralName": "contatti",
+    "displayName": "Contatto",
+    "description": "Richieste di contatto ricevute tramite il sito web"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "nome": {
+      "type": "string",
+      "required": true,
+      "maxLength": 100
+    },
+    "cognome": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "email": {
+      "type": "email",
+      "required": true
+    },
+    "telefono": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "oggetto": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "messaggio": {
+      "type": "text",
+      "required": true
+    },
+    "servizio_interesse": {
+      "type": "enumeration",
+      "enum": ["fabbro", "serramenti", "carpenteria", "altro"]
+    },
+    "stato": {
+      "type": "enumeration",
+      "enum": ["nuovo", "letto", "in_lavorazione", "risposto", "archiviato"],
+      "default": "nuovo",
+      "required": true
+    },
+    "note_interne": {
+      "type": "text"
+    },
+    "ip_address": {
+      "type": "string",
+      "maxLength": 50,
+      "private": true
+    }
+  }
+}

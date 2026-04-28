@@ -1,12 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install *)",
-      "Bash(npx prisma *)",
-      "Bash(npx tsc *)",
-      "Bash(npm run *)",
-      "Read(//tmp/**)",
-      "Bash(node -e \"const p=require\\('./node_modules/next/package.json'\\); console.log\\('Next.js:', p.version\\)\")"
+      "Bash(docker --version)",
+      "Bash(docker-compose --version)",
+      "Bash(docker compose *)",
+      "Bash(node *)",
+      "Bash(docker-compose up *)",
+      "WebFetch(domain:metalmontaggi.navycargo.ovh)",
+      "Bash(docker-compose ps *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:1337/api/servizi)",
+      "Bash(wait)",
+      "Bash(docker-compose restart *)",
+      "Bash(docker cp *)",
+      "Bash(docker-compose -f \"/c/Users/matti/Desktop/CartelleDiLavoro/WorkSpaces/metalmontaggi/docker-compose.yml\" restart strapi)",
+      "Bash(curl -s 'http://localhost:3000/api/servizi?populate=*&sort=ordine:asc&filters\\\\[attivo\\\\]\\\\[$eq\\\\]=true&filters\\\\[publishedAt\\\\]\\\\[$notNull\\\\]=true')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s \"http://localhost:1337/api/servizi?populate=*\")",
+      "Bash(docker restart *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k\\) for k in d['attributes'].keys\\(\\)]\")",
+      "Bash(curl -s \"http://localhost:3000/api/informazioni-azienda?populate=*\")"
     ]
   }
 }

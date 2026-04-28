@@ -1,172 +1,269 @@
-# Metal Montaggi — Sito Web Aziendale
+# Metal Montaggi — CMS Backend (Strapi v4 + PostgreSQL)
 
-Sito web professionale per **Metal Montaggi**, azienda di lavorazioni metalliche con sede a **Leverano (LE)**.
+Sito professionale per **Metal Montaggi**, azienda di Leverano (LE) specializzata in:
+- Lavorazioni da fabbro
+- Serramenti in metallo
+- Carpenteria metallica
 
-## Stack Tecnologico
+---
 
-| Layer | Tecnologia |
+## Stack
+
+| Componente | Tecnologia |
 |---|---|
-| Framework | Next.js 15+ (App Router) |
-| Linguaggio | TypeScript |
-| Stile | Tailwind CSS v4 |
-| Database | PostgreSQL |
-| ORM | Prisma |
-| Auth | JWT in cookie httpOnly (jose) |
-
-> Il backend è integrato tramite Next.js API Routes — un solo `npm run dev` avvia tutto.
+| CMS / API REST | **Strapi v4.22** |
+| Database | **PostgreSQL 15** |
+| Upload media | Plugin locale Strapi |
+| Runtime | **Node.js 18** |
+| Container | **Docker + Docker Compose** |
 
 ---
 
-## Prerequisiti — Versione Node.js
+## Avvio rapido
 
-**Node.js 20 LTS è richiesto** (Next.js 15 non supporta Node.js 19.0.x).
+### 1. Clona e configura l'ambiente
 
-Verifica la tua versione:
 ```bash
-node --version   # deve essere >=20.0.0
+git clone <repo-url>
+cd metalmontaggi
+
+# Crea il file .env partendo dall'esempio
+cp .env.example .env
 ```
 
-### Come aggiornare Node.js su Windows
+### 2. Genera secrets sicuri
 
-**Opzione A — Download diretto (più semplice):**
-1. Scarica Node.js 20 LTS da [nodejs.org](https://nodejs.org/)
-2. Esegui l'installer (sostituisce automaticamente la versione esistente)
-3. Riapri il terminale e verifica: `node --version`
-
-**Opzione B — nvm-windows (per gestire più versioni):**
 ```bash
-# Installa nvm-windows da: https://github.com/coreybutler/nvm-windows
-nvm install 20
-nvm use 20
-node --version  # deve mostrare v20.x.x
+# Esegui questo snippet e copia i valori nel tuo .env
+node -e "
+const crypto = require('crypto');
+const gen = () => crypto.randomBytes(32).toString('base64');
+console.log('APP_KEYS=' + [gen(),gen(),gen(),gen()].join(','));
+console.log('API_TOKEN_SALT=' + gen());
+console.log('ADMIN_JWT_SECRET=' + gen());
+console.log('JWT_SECRET=' + gen());
+console.log('TRANSFER_TOKEN_SALT=' + gen());
+"
+```
+
+### 3. Avvia (produzione)
+
+```bash
+docker-compose up --build -d
+```
+
+### 4. Avvia (sviluppo con hot-reload)
+
+```bash
+docker-compose -f docker-compose.dev.yml up --build
+```
+
+### 5. Accedi al pannello admin
+
+```
+http://localhost:1337/admin
+```
+
+> L'utente admin viene creato automaticamente al primo avvio con le credenziali definite in `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+
+---
+
+## Content Types
+
+### Servizio (collection type)
+> `GET /api/servizi`
+
+| Campo | Tipo | Note |
+|---|---|---|
+| `titolo` | string | Obbligatorio |
+| `slug` | uid | Auto-generato da titolo |
+| `descrizione_breve` | string | Testo breve per card |
+| `descrizione` | richtext | Testo completo |
+| `categoria` | enum | `fabbro` / `serramenti` / `carpenteria` |
+| `immagine_copertina` | media | Immagine principale |
+| `galleria` | media[] | Immagini aggiuntive |
+| `ordine` | integer | Posizione in lista |
+| `in_evidenza` | boolean | Da mostrare in homepage |
+| `attivo` | boolean | Visibilità |
+
+---
+
+### Galleria Progetto (collection type)
+> `GET /api/galleria-progetti`
+
+| Campo | Tipo | Note |
+|---|---|---|
+| `titolo` | string | Obbligatorio |
+| `slug` | uid | Auto-generato |
+| `descrizione` | text | |
+| `immagine_copertina` | media | |
+| `immagini` | media[] | Carousel del progetto |
+| `categoria` | enum | Stesso elenco servizi |
+| `data_completamento` | date | |
+| `cliente` | string | |
+| `luogo` | string | |
+| `in_evidenza` | boolean | |
+
+---
+
+### Contatto (collection type — solo admin può leggere)
+> `POST /api/contatti/submit` (pubblico)
+> `GET /api/contatti` (solo admin)
+
+| Campo | Tipo | Note |
+|---|---|---|
+| `nome` | string | Obbligatorio |
+| `cognome` | string | |
+| `email` | email | Obbligatorio |
+| `telefono` | string | |
+| `oggetto` | string | |
+| `messaggio` | text | Obbligatorio |
+| `servizio_interesse` | enum | |
+| `stato` | enum | `nuovo` / `letto` / `in_lavorazione` / `risposto` / `archiviato` |
+| `note_interne` | text | Visibili solo in admin |
+
+---
+
+### Informazioni Azienda (single type)
+> `GET /api/informazioni-azienda`
+
+Contiene tutti i dati dell'azienda: nome, indirizzo, contatti, social, coordinate, logo, immagini.
+
+---
+
+## Esempi chiamate API
+
+### Servizi — lista con filtri
+
+```bash
+# Tutti i servizi pubblicati
+curl http://localhost:1337/api/servizi?populate=immagine_copertina
+
+# Solo servizi fabbro, ordinati
+curl "http://localhost:1337/api/servizi?filters[categoria][$eq]=fabbro&sort=ordine:asc&populate=*"
+
+# Servizi in evidenza
+curl "http://localhost:1337/api/servizi?filters[in_evidenza][$eq]=true&populate=immagine_copertina"
+
+# Dettaglio singolo servizio
+curl http://localhost:1337/api/servizi/1?populate=*
+curl "http://localhost:1337/api/servizi?filters[slug][$eq]=lavorazioni-fabbro&populate=*"
+```
+
+### Galleria Progetti
+
+```bash
+# Tutti i progetti pubblicati
+curl http://localhost:1337/api/galleria-progetti?populate=immagine_copertina
+
+# Progetti in evidenza per categoria
+curl "http://localhost:1337/api/galleria-progetti?filters[in_evidenza][$eq]=true&filters[categoria][$eq]=serramenti&populate=immagini"
+
+# Paginazione
+curl "http://localhost:1337/api/galleria-progetti?pagination[page]=1&pagination[pageSize]=6&populate=immagine_copertina"
+```
+
+### Informazioni Azienda
+
+```bash
+curl http://localhost:1337/api/informazioni-azienda?populate=*
+```
+
+### Form Contatto (endpoint pubblico)
+
+```bash
+curl -X POST http://localhost:1337/api/contatti/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "Mario",
+    "cognome": "Rossi",
+    "email": "mario.rossi@example.com",
+    "telefono": "+39 333 1234567",
+    "oggetto": "Preventivo cancello",
+    "messaggio": "Vorrei un preventivo per un cancello in ferro.",
+    "servizio_interesse": "fabbro"
+  }'
+```
+
+### Upload immagine (con API Token)
+
+```bash
+curl -X POST http://localhost:1337/api/upload \
+  -H "Authorization: Bearer <API_TOKEN>" \
+  -F "files=@/path/to/immagine.jpg" \
+  -F "ref=api::servizio.servizio" \
+  -F "refId=1" \
+  -F "field=immagine_copertina"
 ```
 
 ---
 
-## Installazione su Windows — Passo per Passo
+## Struttura del progetto
 
-### 1. Installa PostgreSQL
-
-Scarica da [postgresql.org](https://www.postgresql.org/download/windows/) e installa. Ricorda la password di `postgres`.
-
-### 2. Crea il database
-
-```bash
-# In psql o pgAdmin esegui:
-CREATE DATABASE metalmontaggi;
 ```
-
-### 3. Configura l'ambiente
-
-```bash
-copy .env.local.example .env.local
-```
-
-Modifica `.env.local`:
-```env
-DATABASE_URL="postgresql://postgres:TUA_PASSWORD@localhost:5432/metalmontaggi"
-JWT_SECRET="stringa-lunga-e-casuale"
-```
-
-Genera un JWT_SECRET sicuro:
-```bash
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-```
-
-### 4. Installa dipendenze e setup database
-
-```bash
-npm install
-npx prisma generate
-npx prisma migrate dev --name init
-npm run db:seed
-```
-
-### 5. Avvia
-
-```bash
-npm run dev
-```
-
-Sito su: **http://localhost:3000**
-
----
-
-## Credenziali Admin
-
-| Campo | Valore |
-|---|---|
-| URL | http://localhost:3000/admin/login |
-| Email | `admin@metalmontaggi.it` |
-| Password | `admin123` |
-
----
-
-## URL Principali
-
-| Pagina | URL |
-|---|---|
-| Home | `/` |
-| Chi Siamo | `/chi-siamo` |
-| Servizi | `/servizi` |
-| Galleria | `/galleria` |
-| Contatti | `/contatti` |
-| Admin | `/admin/dashboard` |
-
----
-
-## Comandi Utili
-
-```bash
-npm run dev          # Avvia dev server
-npm run build        # Build produzione
-npm run db:migrate   # Crea/aggiorna tabelle DB
-npm run db:seed      # Inserisce dati di esempio
-npx prisma studio    # GUI per il database (porta 5555)
+metalmontaggi/
+├── docker-compose.yml          # Stack produzione
+├── docker-compose.dev.yml      # Stack sviluppo
+├── .env.example                # Template variabili d'ambiente
+├── .gitignore
+├── deploy.sh                   # Script avvio
+└── strapi/
+    ├── Dockerfile              # Immagine produzione
+    ├── Dockerfile.dev          # Immagine sviluppo
+    ├── package.json
+    ├── config/
+    │   ├── database.js         # Connessione PostgreSQL
+    │   ├── server.js           # Host / port
+    │   ├── admin.js            # JWT admin
+    │   ├── plugins.js          # Upload + i18n
+    │   └── middlewares.js      # CORS + security
+    ├── src/
+    │   ├── index.js            # Bootstrap (admin user + permessi)
+    │   └── api/
+    │       ├── servizio/               # Servizi offerti
+    │       ├── galleria-progetto/      # Portfolio lavori
+    │       ├── contatto/               # Form contatti
+    │       └── informazioni-azienda/   # Single type dati azienda
+    └── public/
+        └── uploads/            # File caricati (volume Docker)
 ```
 
 ---
 
-## Personalizzazioni
+## Comandi utili
 
-1. Telefono/email/indirizzo → `components/Footer.tsx` e `app/(public)/contatti/page.tsx`
-2. Foto reali → pannello admin `/admin/galleria`
-3. Mappa → sostituisci il placeholder in `contatti/page.tsx`
-4. Colore accento → cerca `orange-500` in `globals.css`
+```bash
+# Logs Strapi
+docker-compose logs -f strapi
+
+# Logs PostgreSQL
+docker-compose logs -f postgres
+
+# Accesso al DB
+docker-compose exec postgres psql -U strapi -d metalmontaggi
+
+# Riavvio solo Strapi
+docker-compose restart strapi
+
+# Stop completo
+docker-compose down
+
+# Stop + elimina dati (ATTENZIONE!)
+docker-compose down -v
+```
 
 ---
 
-## First run (default Next.js instructions)
+## Permessi configurati automaticamente
 
-First, run the development server:
+Al primo avvio il bootstrap configura i seguenti permessi per il ruolo **Public** (senza autenticazione):
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Endpoint | Metodo | Pubblico |
+|---|---|---|
+| `/api/servizi` | GET | ✅ |
+| `/api/servizi/:id` | GET | ✅ |
+| `/api/galleria-progetti` | GET | ✅ |
+| `/api/galleria-progetti/:id` | GET | ✅ |
+| `/api/informazioni-azienda` | GET | ✅ |
+| `/api/contatti/submit` | POST | ✅ |
+| `/api/contatti` | GET/PUT/DELETE | ❌ Solo admin |

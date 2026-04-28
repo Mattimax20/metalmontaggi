@@ -1,0 +1,65 @@
+{
+  "kind": "collectionType",
+  "collectionName": "galleria_progetti",
+  "info": {
+    "singularName": "galleria-progetto",
+    "pluralName": "galleria-progetti",
+    "displayName": "Galleria Progetto",
+    "description": "Portfolio di lavori realizzati da Metal Montaggi"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "titolo": {
+      "type": "string",
+      "required": true,
+      "maxLength": 200
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "titolo",
+      "required": true
+    },
+    "descrizione": {
+      "type": "text",
+      "maxLength": 1000
+    },
+    "immagine_copertina": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "immagini": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "categoria": {
+      "type": "enumeration",
+      "enum": ["fabbro", "serramenti", "carpenteria"]
+    },
+    "data_completamento": {
+      "type": "date"
+    },
+    "cliente": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "luogo": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "in_evidenza": {
+      "type": "boolean",
+      "default": false
+    },
+    "ordine": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}
