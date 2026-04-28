@@ -1,96 +1,114 @@
 pipeline {
-  agent any
+  // Gira direttamente sul server di produzione (10.0.0.5)
+  // dove Docker è installato e disponibile
+  agent { label 'prod' }
 
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 20, unit: 'MINUTES')
+    timeout(time: 30, unit: 'MINUTES')
   }
 
   environment {
-    GIT_REPO    = 'https://github.com/Mattimax20/metalmontaggi.git'
-    DEPLOY_HOST = '10.0.0.5'
-    DEPLOY_USER = 'master'
-    DEPLOY_DIR  = '/opt/metalmontaggi'
+    DEPLOY_DIR = '/opt/metalmontaggi'
+    GIT_REPO   = 'https://github.com/Mattimax20/metalmontaggi.git'
   }
 
   stages {
 
     stage('Checkout') {
       steps {
-        git branch: 'master', url: env.GIT_REPO
+        // Clona il repo nella DEPLOY_DIR
+        sh '''
+          if [ -d "${DEPLOY_DIR}/.git" ]; then
+            echo "→ Aggiorno repo esistente"
+            git -C "${DEPLOY_DIR}" fetch origin
+            git -C "${DEPLOY_DIR}" reset --hard origin/master
+          else
+            echo "→ Clone iniziale"
+            echo master2024 | sudo -S mkdir -p "${DEPLOY_DIR}"
+            echo master2024 | sudo -S chown $(whoami) "${DEPLOY_DIR}"
+            git clone "${GIT_REPO}" "${DEPLOY_DIR}"
+          fi
+        '''
       }
     }
 
-    stage('Deploy') {
+    stage('Prepare .env') {
       steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'deploy-server-ssh',
-          usernameVariable: 'SSH_USER',
-          passwordVariable: 'SSH_PASS'
-        )]) {
-          sh '''
-            export SSHPASS="$SSH_PASS"
-            SSH="sshpass -e ssh -o StrictHostKeyChecking=no"
-            SCP="sshpass -e scp -o StrictHostKeyChecking=no"
+        sh '''
+          if [ ! -f "${DEPLOY_DIR}/.env" ]; then
+            echo "⚠️  Creo .env di default — modifica i valori reali in ${DEPLOY_DIR}/.env"
+            cat > "${DEPLOY_DIR}/.env" << 'ENVEOF'
+DATABASE_NAME=metalmontaggi
+DATABASE_USERNAME=strapi
+DATABASE_PASSWORD=Str4piSecure!2024
+DATABASE_PORT=5432
+DATABASE_SSL=false
+APP_KEYS=key1abc123456789,key2abc123456789,key3abc123456789,key4abc123456789
+API_TOKEN_SALT=apisalt123456789012345678901234
+ADMIN_JWT_SECRET=adminjwtsecret1234567890123456
+JWT_SECRET=jwtsecret12345678901234567890123
+TRANSFER_TOKEN_SALT=transfersalt1234567890123456789
+ADMIN_EMAIL=admin@metalmontaggi.it
+ADMIN_PASSWORD=MetalMontaggi@2024!
+PORT=1337
+ENVEOF
+          else
+            echo "✅ .env già presente"
+          fi
+        '''
+      }
+    }
 
-            echo "→ Deploy su ${SSH_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}"
+    stage('Build & Deploy') {
+      steps {
+        sh '''
+          cd "${DEPLOY_DIR}"
 
-            # Crea directory remota
-            $SSH ${SSH_USER}@${DEPLOY_HOST} "mkdir -p ${DEPLOY_DIR}"
+          echo "🐳 Build Docker images..."
+          docker compose build --no-cache
 
-            # Sincronizza sorgenti via rsync+sshpass
-            sshpass -e rsync -az --delete \
-              --exclude='.git' \
-              --exclude='node_modules' \
-              --exclude='*/node_modules' \
-              --exclude='.env' \
-              --exclude='public/uploads/*' \
-              -e "ssh -o StrictHostKeyChecking=no" \
-              . ${SSH_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}/
+          echo "🚀 Avvio stack..."
+          docker compose up -d --remove-orphans
 
-            # Esegui script di deploy remoto
-            $SSH ${SSH_USER}@${DEPLOY_HOST} \
-              "chmod +x ${DEPLOY_DIR}/scripts/remote-deploy.sh && \
-               ${DEPLOY_DIR}/scripts/remote-deploy.sh ${DEPLOY_DIR}"
-          '''
-        }
+          echo "⏳ Attesa postgres healthy..."
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            STATUS=$(docker inspect --format="{{.State.Health.Status}}" metalmontaggi-postgres 2>/dev/null || echo missing)
+            [ "$STATUS" = "healthy" ] && echo "✅ Postgres OK" && break
+            echo "  ... ($i/12) $STATUS"
+            sleep 5
+          done
+
+          echo ""
+          echo "Containers attivi:"
+          docker compose ps
+        '''
       }
     }
 
     stage('Smoke Test') {
       steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'deploy-server-ssh',
-          usernameVariable: 'SSH_USER',
-          passwordVariable: 'SSH_PASS'
-        )]) {
-          sh '''
-            export SSHPASS="$SSH_PASS"
-            SSH="sshpass -e ssh -o StrictHostKeyChecking=no"
-
-            echo "🔍 Test Strapi API..."
-            for i in 1 2 3 4 5 6; do
-              HTTP=$($SSH ${SSH_USER}@${DEPLOY_HOST} \
-                "curl -sk -o /dev/null -w '%{http_code}' http://localhost:1337/api/informazioni-azienda 2>/dev/null || echo 000")
-              if [ "$HTTP" = "200" ]; then
-                echo "✅ Strapi OK (HTTP 200)"
-                break
-              fi
-              echo "  ... ($i/6) HTTP $HTTP — attesa 10s"
-              sleep 10
-            done
-
-            echo "🔍 Test Frontend..."
-            HTTP=$($SSH ${SSH_USER}@${DEPLOY_HOST} \
-              "curl -sk -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null || echo 000")
+        sh '''
+          echo "🔍 Test Strapi API..."
+          for i in 1 2 3 4 5 6; do
+            HTTP=$(curl -sk -o /dev/null -w "%{http_code}" http://localhost:1337/api/informazioni-azienda 2>/dev/null || echo 000)
             if [ "$HTTP" = "200" ]; then
-              echo "✅ Frontend OK (HTTP 200)"
-            else
-              echo "⚠️  Frontend risponde HTTP $HTTP"
+              echo "✅ Strapi OK (HTTP 200)"
+              break
             fi
-          '''
-        }
+            echo "  ... ($i/6) HTTP $HTTP — attesa 10s"
+            sleep 10
+          done
+
+          echo "🔍 Test Frontend..."
+          HTTP=$(curl -sk -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo 000)
+          if [ "$HTTP" = "200" ]; then
+            echo "✅ Frontend OK (HTTP 200)"
+          else
+            echo "⚠️  Frontend HTTP $HTTP"
+          fi
+        '''
       }
     }
   }
@@ -100,18 +118,10 @@ pipeline {
       echo "✅ DEPLOY COMPLETATO — Build #${BUILD_NUMBER} — master"
     }
     failure {
-      withCredentials([usernamePassword(
-        credentialsId: 'deploy-server-ssh',
-        usernameVariable: 'SSH_USER',
-        passwordVariable: 'SSH_PASS'
-      )]) {
-        sh '''
-          export SSHPASS="$SSH_PASS"
-          echo "❌ DEPLOY FALLITO — ultimi log Strapi:"
-          sshpass -e ssh -o StrictHostKeyChecking=no ${SSH_USER}@${DEPLOY_HOST} \
-            "cd ${DEPLOY_DIR} && docker compose logs --tail=40 strapi 2>/dev/null || true" || true
-        '''
-      }
+      sh '''
+        echo "❌ DEPLOY FALLITO — log Strapi:"
+        cd "${DEPLOY_DIR}" && docker compose logs --tail=40 strapi 2>/dev/null || true
+      '''
     }
     always {
       cleanWs()
