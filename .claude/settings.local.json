@@ -19,7 +19,18 @@
       "Bash(curl -s \"http://localhost:1337/api/servizi?populate=*\")",
       "Bash(docker restart *)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k\\) for k in d['attributes'].keys\\(\\)]\")",
-      "Bash(curl -s \"http://localhost:3000/api/informazioni-azienda?populate=*\")"
+      "Bash(curl -s \"http://localhost:3000/api/informazioni-azienda?populate=*\")",
+      "Bash(git -C /c/Users/matti/Desktop/CartelleDiLavoro/WorkSpaces/metalmontaggi remote -v)",
+      "Bash(git -C /c/Users/matti/Desktop/CartelleDiLavoro/WorkSpaces/metalmontaggi log --oneline -5)",
+      "Bash(curl *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl.exe -s --insecure --max-time 30 -u MattiaCaliandro:Mc15632022! 'https://jenkis.navycargo.ovh/pluginManager/api/json?depth=1' -o C:/tmp/jp.json)",
+      "Read(//c/tmp/**)",
+      "Bash(curl.exe -sk -u MattiaCaliandro:Mc15632022! https://jenkis.navycargo.ovh/crumbIssuer/api/json --max-time 15)",
+      "Bash(curl.exe *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }
