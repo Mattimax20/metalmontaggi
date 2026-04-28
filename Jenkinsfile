@@ -8,11 +8,10 @@ pipeline {
   }
 
   environment {
-    GIT_REPO = 'https://github.com/Mattimax20/metalmontaggi.git'
-    // Definisci in: Manage Jenkins → System → Global properties → Environment variables
-    //   DEPLOY_HOST = IP o hostname del server (es. 185.1.2.3)
-    //   DEPLOY_USER = utente SSH            (es. root)
-    //   DEPLOY_DIR  = percorso sul server   (es. /opt/metalmontaggi)
+    GIT_REPO    = 'https://github.com/Mattimax20/metalmontaggi.git'
+    DEPLOY_HOST = '10.0.0.5'
+    DEPLOY_USER = 'master'
+    DEPLOY_DIR  = '/opt/metalmontaggi'
   }
 
   stages {
@@ -25,31 +24,33 @@ pipeline {
 
     stage('Deploy') {
       steps {
-        withCredentials([sshUserPrivateKey(
+        withCredentials([usernamePassword(
           credentialsId: 'deploy-server-ssh',
-          keyFileVariable: 'SSH_KEY'
+          usernameVariable: 'SSH_USER',
+          passwordVariable: 'SSH_PASS'
         )]) {
           sh '''
-            SSH="ssh -i $SSH_KEY -o StrictHostKeyChecking=no -o BatchMode=yes"
-            RSYNC_SSH="ssh -i $SSH_KEY -o StrictHostKeyChecking=no"
+            export SSHPASS="$SSH_PASS"
+            SSH="sshpass -e ssh -o StrictHostKeyChecking=no"
+            SCP="sshpass -e scp -o StrictHostKeyChecking=no"
 
-            echo "→ Deploy su ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}"
+            echo "→ Deploy su ${SSH_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}"
 
             # Crea directory remota
-            $SSH ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p ${DEPLOY_DIR}"
+            $SSH ${SSH_USER}@${DEPLOY_HOST} "mkdir -p ${DEPLOY_DIR}"
 
-            # Sincronizza sorgenti
-            rsync -az --delete \
+            # Sincronizza sorgenti via rsync+sshpass
+            sshpass -e rsync -az --delete \
               --exclude='.git' \
               --exclude='node_modules' \
               --exclude='*/node_modules' \
               --exclude='.env' \
               --exclude='public/uploads/*' \
-              -e "$RSYNC_SSH" \
-              . ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}/
+              -e "ssh -o StrictHostKeyChecking=no" \
+              . ${SSH_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}/
 
             # Esegui script di deploy remoto
-            $SSH ${DEPLOY_USER}@${DEPLOY_HOST} \
+            $SSH ${SSH_USER}@${DEPLOY_HOST} \
               "chmod +x ${DEPLOY_DIR}/scripts/remote-deploy.sh && \
                ${DEPLOY_DIR}/scripts/remote-deploy.sh ${DEPLOY_DIR}"
           '''
@@ -59,16 +60,18 @@ pipeline {
 
     stage('Smoke Test') {
       steps {
-        withCredentials([sshUserPrivateKey(
+        withCredentials([usernamePassword(
           credentialsId: 'deploy-server-ssh',
-          keyFileVariable: 'SSH_KEY'
+          usernameVariable: 'SSH_USER',
+          passwordVariable: 'SSH_PASS'
         )]) {
           sh '''
-            SSH="ssh -i $SSH_KEY -o StrictHostKeyChecking=no"
+            export SSHPASS="$SSH_PASS"
+            SSH="sshpass -e ssh -o StrictHostKeyChecking=no"
 
             echo "🔍 Test Strapi API..."
             for i in 1 2 3 4 5 6; do
-              HTTP=$($SSH ${DEPLOY_USER}@${DEPLOY_HOST} \
+              HTTP=$($SSH ${SSH_USER}@${DEPLOY_HOST} \
                 "curl -sk -o /dev/null -w '%{http_code}' http://localhost:1337/api/informazioni-azienda 2>/dev/null || echo 000")
               if [ "$HTTP" = "200" ]; then
                 echo "✅ Strapi OK (HTTP 200)"
@@ -79,7 +82,7 @@ pipeline {
             done
 
             echo "🔍 Test Frontend..."
-            HTTP=$($SSH ${DEPLOY_USER}@${DEPLOY_HOST} \
+            HTTP=$($SSH ${SSH_USER}@${DEPLOY_HOST} \
               "curl -sk -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null || echo 000")
             if [ "$HTTP" = "200" ]; then
               echo "✅ Frontend OK (HTTP 200)"
@@ -97,14 +100,15 @@ pipeline {
       echo "✅ DEPLOY COMPLETATO — Build #${BUILD_NUMBER} — master"
     }
     failure {
-      withCredentials([sshUserPrivateKey(
+      withCredentials([usernamePassword(
         credentialsId: 'deploy-server-ssh',
-        keyFileVariable: 'SSH_KEY'
+        usernameVariable: 'SSH_USER',
+        passwordVariable: 'SSH_PASS'
       )]) {
         sh '''
-          SSH="ssh -i $SSH_KEY -o StrictHostKeyChecking=no"
+          export SSHPASS="$SSH_PASS"
           echo "❌ DEPLOY FALLITO — ultimi log Strapi:"
-          $SSH ${DEPLOY_USER}@${DEPLOY_HOST} \
+          sshpass -e ssh -o StrictHostKeyChecking=no ${SSH_USER}@${DEPLOY_HOST} \
             "cd ${DEPLOY_DIR} && docker compose logs --tail=40 strapi 2>/dev/null || true" || true
         '''
       }
