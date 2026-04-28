@@ -8,41 +8,32 @@ pipeline {
   }
 
   environment {
-    COMPOSE_PROJECT_NAME = 'metalmontaggi'
-    GIT_REPO             = 'https://github.com/Mattimax20/metalmontaggi.git'
-    // Impostare in Jenkins → Manage Jenkins → System → Global properties:
-    //   DEPLOY_HOST  = IP o hostname del server di produzione
-    //   DEPLOY_USER  = utente SSH (es. root oppure ubuntu)
-    //   DEPLOY_DIR   = percorso sul server (es. /opt/metalmontaggi)
+    GIT_REPO   = 'https://github.com/Mattimax20/metalmontaggi.git'
+    // Definisci queste 3 variabili in:
+    // Jenkins → Manage Jenkins → System → Global properties → Environment variables
+    //   DEPLOY_HOST = IP o hostname del server (es. 1.2.3.4)
+    //   DEPLOY_USER = utente SSH (es. root)
+    //   DEPLOY_DIR  = cartella sul server (es. /opt/metalmontaggi)
   }
 
   stages {
 
-    // ── 1. Checkout ──────────────────────────────────────
     stage('Checkout') {
       steps {
         git branch: 'master', url: "${GIT_REPO}"
       }
     }
 
-    // ── 2. Deploy via SSH ─────────────────────────────────
     stage('Deploy') {
       steps {
-        // Usa la credential SSH creata in Jenkins con ID "deploy-server-ssh"
         sshagent(credentials: ['deploy-server-ssh']) {
-          sh """
-            set -e
+          sh 'echo "→ Target: ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}"'
 
-            DEPLOY_HOST=\${DEPLOY_HOST:-"CONFIGURA_IP_SERVER"}
-            DEPLOY_USER=\${DEPLOY_USER:-"root"}
-            DEPLOY_DIR=\${DEPLOY_DIR:-"/opt/metalmontaggi"}
+          // Crea directory remota
+          sh 'ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p ${DEPLOY_DIR}"'
 
-            echo "🚀 Deploy su \${DEPLOY_USER}@\${DEPLOY_HOST}:\${DEPLOY_DIR}"
-
-            # Crea directory se non esiste
-            ssh -o StrictHostKeyChecking=no \${DEPLOY_USER}@\${DEPLOY_HOST} "mkdir -p \${DEPLOY_DIR}"
-
-            # Sincronizza sorgenti (escludi file grandi/inutili)
+          // Sincronizza sorgenti (esclude .env e node_modules)
+          sh '''
             rsync -az --delete \
               --exclude='.git' \
               --exclude='node_modules' \
@@ -50,84 +41,37 @@ pipeline {
               --exclude='.env' \
               --exclude='public/uploads/*' \
               -e "ssh -o StrictHostKeyChecking=no" \
-              . \${DEPLOY_USER}@\${DEPLOY_HOST}:\${DEPLOY_DIR}/
+              . ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}/
+          '''
 
-            # Deploy sul server remoto
-            ssh -o StrictHostKeyChecking=no \${DEPLOY_USER}@\${DEPLOY_HOST} << 'REMOTE'
-              set -e
-              cd /opt/metalmontaggi
-
-              # Crea .env solo se non esiste
-              if [ ! -f .env ]; then
-                echo "⚠️  .env non trovato — creazione con valori placeholder"
-                cat > .env << 'ENVEOF'
-DATABASE_NAME=metalmontaggi
-DATABASE_USERNAME=strapi
-DATABASE_PASSWORD=CAMBIA_ME_password_sicura
-DATABASE_PORT=5432
-DATABASE_SSL=false
-APP_KEYS=CAMBIA_ME_key1,CAMBIA_ME_key2,CAMBIA_ME_key3,CAMBIA_ME_key4
-API_TOKEN_SALT=CAMBIA_ME_api_token_salt_32chars
-ADMIN_JWT_SECRET=CAMBIA_ME_admin_jwt_secret_32chars
-JWT_SECRET=CAMBIA_ME_jwt_secret_32chars
-TRANSFER_TOKEN_SALT=CAMBIA_ME_transfer_token_salt
-ADMIN_EMAIL=admin@metalmontaggi.it
-ADMIN_PASSWORD=MetalMontaggi@2024!
-PORT=1337
-ENVEOF
-                echo "⚠️  ATTENZIONE: modifica /opt/metalmontaggi/.env con i valori reali!"
-              fi
-
-              echo "🐳 Build Docker images..."
-              docker compose build --no-cache
-
-              echo "🚀 Avvio stack..."
-              docker compose up -d --remove-orphans
-
-              echo "⏳ Attesa postgres healthy..."
-              for i in $(seq 1 12); do
-                STATUS=$(docker inspect --format='{{.State.Health.Status}}' metalmontaggi-postgres 2>/dev/null || echo missing)
-                [ "$STATUS" = "healthy" ] && echo "✅ Postgres OK" && break
-                echo "  ... ($i/12) $STATUS"
-                sleep 5
-              done
-
-              echo ""
-              echo "✅ Containers attivi:"
-              docker compose ps
-REMOTE
-
-          """
+          // Rendi eseguibile lo script remoto e lancia il deploy
+          sh 'ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "chmod +x ${DEPLOY_DIR}/scripts/remote-deploy.sh && ${DEPLOY_DIR}/scripts/remote-deploy.sh ${DEPLOY_DIR}"'
         }
       }
     }
 
-    // ── 3. Smoke Test ─────────────────────────────────────
     stage('Smoke Test') {
       steps {
         sshagent(credentials: ['deploy-server-ssh']) {
-          sh """
-            set -e
-            DEPLOY_HOST=\${DEPLOY_HOST:-"CONFIGURA_IP_SERVER"}
-            DEPLOY_USER=\${DEPLOY_USER:-"root"}
-
-            echo "🔍 Test API Strapi..."
-            for i in \$(seq 1 6); do
-              HTTP=\$(ssh -o StrictHostKeyChecking=no \${DEPLOY_USER}@\${DEPLOY_HOST} \
+          sh '''
+            echo "🔍 Test Strapi API..."
+            for i in 1 2 3 4 5 6; do
+              HTTP=$(ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} \
                 "curl -sk -o /dev/null -w '%{http_code}' http://localhost:1337/api/informazioni-azienda 2>/dev/null || echo 000")
-              if [ "\$HTTP" = "200" ]; then
-                echo "✅ Strapi API OK (HTTP 200)"
+              if [ "$HTTP" = "200" ]; then
+                echo "✅ Strapi OK (HTTP 200)"
                 break
               fi
-              echo "  ... (\$i/6) HTTP \$HTTP — attesa..."
+              echo "  ... ($i/6) HTTP $HTTP — attesa 10s"
               sleep 10
             done
 
             echo "🔍 Test Frontend..."
-            HTTP=\$(ssh -o StrictHostKeyChecking=no \${DEPLOY_USER}@\${DEPLOY_HOST} \
+            HTTP=$(ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} \
               "curl -sk -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null || echo 000")
-            echo "Frontend HTTP: \$HTTP"
-          """
+            echo "Frontend HTTP: $HTTP"
+            [ "$HTTP" = "200" ] && echo "✅ Frontend OK" || echo "⚠️  Frontend risponde $HTTP"
+          '''
         }
       }
     }
@@ -135,15 +79,14 @@ REMOTE
 
   post {
     success {
-      echo """
-        ╔══════════════════════════════════════╗
-        ║   ✅ DEPLOY COMPLETATO — Build #${BUILD_NUMBER}  ║
-        ╚══════════════════════════════════════╝
-        Branch: master | Commit: ${GIT_COMMIT?.take(7)}
-      """
+      echo "✅ DEPLOY COMPLETATO — Build #${BUILD_NUMBER} — branch master"
     }
     failure {
-      echo "❌ DEPLOY FALLITO — Build #${BUILD_NUMBER} — controlla i log"
+      sh '''
+        echo "❌ DEPLOY FALLITO — log remoto:"
+        ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} \
+          "cd ${DEPLOY_DIR} && docker compose logs --tail=40 strapi 2>/dev/null || true" || true
+      '''
     }
     always {
       cleanWs()
