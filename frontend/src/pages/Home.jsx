@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SeoHead } from '../hooks/useSeo'
 import {
   useGetCompanyInfoQuery,
   useGetFeaturedServicesQuery,
@@ -223,6 +224,11 @@ export default function Home() {
 
   return (
     <>
+      <SeoHead
+        title="Fabbro, Serramenti e Carpenteria Metallica a Leverano (LE)"
+        description="Metal Montaggi: lavorazioni da fabbro, serramenti in metallo e carpenteria metallica a Leverano (Lecce). Cancelli, ringhiere, portoni su misura. Preventivo gratuito."
+        path="/"
+      />
       <Hero c={company} />
       <Stats c={company} />
       <ServicesPreview c={company} services={featuredServices} />

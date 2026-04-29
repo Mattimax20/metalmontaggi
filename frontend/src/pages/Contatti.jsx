@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { SeoHead } from '../hooks/useSeo'
 import { submitContact, resetContact, selectContactStatus, selectContactError } from '../store/slices/contactSlice'
 import { useGetCompanyInfoQuery } from '../store/api/strapiApi'
 import Button from '../components/ui/Button'
@@ -56,6 +57,11 @@ export default function Contatti() {
 
   return (
     <>
+      <SeoHead
+        title="Contatti – Richiedi un Preventivo Gratuito"
+        description="Contatta Metal Montaggi a Leverano (Lecce) per un preventivo gratuito su cancelli, ringhiere, serramenti e strutture metalliche su misura. Risposta rapida."
+        path="/contatti"
+      />
       {/* Hero */}
       <section className="relative pt-32 pb-16 bg-zinc-900 border-b border-zinc-800">
         <div className="absolute inset-0 bg-gradient-to-br from-brand/5 to-transparent" />

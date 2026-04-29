@@ -66,19 +66,34 @@ ENVEOF
         sh '''
           cd "${DEPLOY_DIR}"
 
-          echo "🐳 Build Docker images..."
-          docker compose build --no-cache
+          # ── Postgres: avvia solo se non è già healthy ──────────────────────
+          # MAI riavviare postgres se contiene dati: il volume Docker persiste,
+          # ma un restart inutile causa downtime. Non usare mai "docker compose down -v".
+          PG_STATUS=$(docker inspect --format="{{.State.Health.Status}}" metalmontaggi-postgres 2>/dev/null || echo missing)
+          if [ "$PG_STATUS" = "healthy" ]; then
+            echo "✅ Postgres già healthy — non verrà riavviato"
+          else
+            echo "🐘 Avvio postgres..."
+            docker compose up -d postgres
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              PG_STATUS=$(docker inspect --format="{{.State.Health.Status}}" metalmontaggi-postgres 2>/dev/null || echo missing)
+              [ "$PG_STATUS" = "healthy" ] && echo "✅ Postgres OK" && break
+              echo "  ... ($i/12) $PG_STATUS"
+              sleep 5
+            done
+            if [ "$PG_STATUS" != "healthy" ]; then
+              echo "❌ Postgres non è diventato healthy — abort"
+              exit 1
+            fi
+          fi
 
-          echo "🚀 Avvio stack..."
-          docker compose up -d --remove-orphans
+          # ── Build solo strapi e frontend (postgres usa image, non ha build) ─
+          echo "🐳 Build Docker images (strapi + frontend)..."
+          docker compose build --no-cache strapi frontend
 
-          echo "⏳ Attesa postgres healthy..."
-          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-            STATUS=$(docker inspect --format="{{.State.Health.Status}}" metalmontaggi-postgres 2>/dev/null || echo missing)
-            [ "$STATUS" = "healthy" ] && echo "✅ Postgres OK" && break
-            echo "  ... ($i/12) $STATUS"
-            sleep 5
-          done
+          # ── Riavvia strapi e frontend senza toccare postgres ───────────────
+          echo "🚀 Deploy strapi + frontend..."
+          docker compose up -d --no-deps strapi frontend
 
           echo ""
           echo "Containers attivi:"

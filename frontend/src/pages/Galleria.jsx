@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { SeoHead } from '../hooks/useSeo'
 import { useGetGalleryProjectsQuery, useGetCompanyInfoQuery } from '../store/api/strapiApi'
 import { getStrapiImageUrl, getCategoryLabel } from '../utils/strapi'
 import Button from '../components/ui/Button'
@@ -109,6 +110,11 @@ export default function Galleria() {
 
   return (
     <>
+      <SeoHead
+        title="Galleria Lavori – Cancelli, Ringhiere e Strutture Metalliche"
+        description="Guarda i lavori realizzati da Metal Montaggi: cancelli, ringhiere, serramenti e strutture in ferro e acciaio a Leverano (Lecce). Foto dei nostri progetti."
+        path="/galleria"
+      />
       {/* Hero */}
       <section className="relative pt-32 pb-16 bg-zinc-900 border-b border-zinc-800">
         <div className="absolute inset-0 bg-gradient-to-br from-brand/5 to-transparent" />

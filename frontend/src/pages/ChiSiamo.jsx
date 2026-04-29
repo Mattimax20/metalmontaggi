@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SeoHead } from '../hooks/useSeo'
 import { useGetCompanyInfoQuery } from '../store/api/strapiApi'
 import { getStrapiImageUrl } from '../utils/strapi'
 import Button from '../components/ui/Button'
@@ -17,6 +18,11 @@ export default function ChiSiamo() {
 
   return (
     <>
+      <SeoHead
+        title="Chi Siamo – La Nostra Storia e i Nostri Valori"
+        description="Scopri la storia di Metal Montaggi, azienda di fabbricazione metallica a Leverano (Lecce). Esperienza, qualità e passione per le lavorazioni in ferro e acciaio."
+        path="/chi-siamo"
+      />
       {/* Hero */}
       <section className="relative pt-32 pb-20 bg-zinc-900 border-b border-zinc-800">
         <div className="absolute inset-0 bg-gradient-to-br from-brand/5 to-transparent" />
