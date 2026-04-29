@@ -8,6 +8,8 @@ import ChiSiamo from './pages/ChiSiamo'
 import Servizi from './pages/Servizi'
 import Galleria from './pages/Galleria'
 import Contatti from './pages/Contatti'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import CookiePolicy from './pages/CookiePolicy'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="/servizi" element={<Servizi />} />
           <Route path="/galleria" element={<Galleria />} />
           <Route path="/contatti" element={<Contatti />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
