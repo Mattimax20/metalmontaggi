@@ -21,7 +21,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 # Cache mount: /root/.npm persiste tra build — evita ri-download dei pacchetti
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline
+    npm install --prefer-offline
 
 COPY . .
 RUN npm run build

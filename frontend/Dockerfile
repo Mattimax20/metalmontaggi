@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 # Cache mount: /root/.npm persiste tra build — npm non ri-scarica pacchetti già presenti
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline
+    npm install --prefer-offline
 
 COPY . .
 RUN npm run build
