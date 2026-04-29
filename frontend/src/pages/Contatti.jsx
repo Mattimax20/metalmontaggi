@@ -185,11 +185,17 @@ export default function Contatti() {
                 </a>
               )}
 
-              <div className="mt-4 h-44 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center">
-                <div className="text-center text-zinc-500">
-                  <div className="text-3xl mb-2">🗺</div>
-                  <p className="text-sm">{c?.citta ?? 'Leverano'} ({c?.provincia ?? 'LE'}) — Salento, Puglia</p>
-                </div>
+              <div className="mt-4 h-56 rounded-2xl overflow-hidden border border-zinc-700">
+                <iframe
+                  title="Mappa sede"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(
+                    [c?.indirizzo, c?.cap, c?.citta, c?.provincia ? `(${c.provincia})` : '', 'Italia']
+                      .filter(Boolean).join(' ')
+                  )}&output=embed&hl=it&z=15`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
               </div>
             </div>
           </div>
