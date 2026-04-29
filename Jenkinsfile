@@ -86,7 +86,7 @@ ENVEOF
               REBUILD=""
               echo "$CHANGED" | grep -qE "^frontend/"                      && REBUILD="$REBUILD frontend"
               echo "$CHANGED" | grep -qE "^strapi/"                        && REBUILD="$REBUILD strapi"
-              echo "$CHANGED" | grep -qE "^docker-compose|^\.env|Dockerfile" && REBUILD="strapi frontend"
+              echo "$CHANGED" | grep -qE "^docker-compose|^[.]env|Dockerfile" && REBUILD="strapi frontend"
 
               # Fallback: se non si capisce cosa è cambiato, rebuild tutto
               [ -z "$(echo $REBUILD | tr -d ' ')" ] && REBUILD="strapi frontend"
