@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useGetCompanyInfoQuery } from '../../store/api/strapiApi'
 import { getStrapiImageUrl } from '../../utils/strapi'
+import { revokeConsent } from '../../utils/cookieConsent'
 
 const SERVIZI_LINKS = [
   { to: '/servizi#fabbro', label: 'Lavorazioni Fabbro' },
@@ -139,16 +140,36 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Copyright */}
+      {/* Copyright + link legali */}
       <div className="border-t border-zinc-800 py-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
           <span>
             {c?.footer_copyright
               ? c.footer_copyright.replace('{year}', currentYear)
               : `© ${currentYear} ${nomeAzienda}. Tutti i diritti riservati.`
             }
           </span>
-          {c?.piva && <span>P.IVA {c.piva}</span>}
+
+          {/* Link legali + revoca consenso */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {c?.piva && <span>P.IVA {c.piva}</span>}
+            <Link to="/privacy-policy" className="hover:text-zinc-300 transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="/cookie-policy" className="hover:text-zinc-300 transition-colors">
+              Cookie Policy
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                revokeConsent()
+                window.location.reload()
+              }}
+              className="hover:text-zinc-300 transition-colors underline underline-offset-2 cursor-pointer"
+            >
+              Gestisci cookie
+            </button>
+          </div>
         </div>
       </div>
     </footer>
