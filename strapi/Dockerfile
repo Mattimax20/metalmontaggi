@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # ============================================================
 #  Strapi Production Image
 # ============================================================
@@ -15,8 +17,12 @@ WORKDIR /opt/app
 # ── Install + Build ───────────────────────────────────────
 FROM base AS builder
 ENV NODE_ENV=production
-COPY package.json ./
-RUN npm install
+
+COPY package*.json ./
+# Cache mount: /root/.npm persiste tra build — evita ri-download dei pacchetti
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline
+
 COPY . .
 RUN npm run build
 
@@ -25,10 +31,10 @@ FROM base AS runner
 ENV NODE_ENV=production
 
 COPY --from=builder /opt/app/node_modules ./node_modules
-COPY --from=builder /opt/app/build ./build
-COPY --from=builder /opt/app/config ./config
-COPY --from=builder /opt/app/src ./src
-COPY --from=builder /opt/app/public ./public
+COPY --from=builder /opt/app/build        ./build
+COPY --from=builder /opt/app/config       ./config
+COPY --from=builder /opt/app/src          ./src
+COPY --from=builder /opt/app/public       ./public
 COPY package.json ./
 
 RUN mkdir -p public/uploads && \
@@ -36,5 +42,4 @@ RUN mkdir -p public/uploads && \
 
 USER node
 EXPOSE 1337
-
 CMD ["node_modules/.bin/strapi", "start"]

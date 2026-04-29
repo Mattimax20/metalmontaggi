@@ -1,8 +1,14 @@
+# syntax=docker/dockerfile:1
+
 # ── Build ────────────────────────────────────────────────
 FROM node:18-alpine AS builder
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+
+COPY package*.json ./
+# Cache mount: /root/.npm persiste tra build — npm non ri-scarica pacchetti già presenti
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline
+
 COPY . .
 RUN npm run build
 
