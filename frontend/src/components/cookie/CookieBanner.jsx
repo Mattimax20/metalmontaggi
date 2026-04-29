@@ -46,9 +46,7 @@ export default function CookieBanner() {
           role="dialog"
           aria-modal="false"
           aria-label="Informativa sui cookie"
-          className="fixed bottom-0 left-0 right-0 z-[9998] p-4 sm:p-6
-                     animate-[slideUp_0.4s_ease-out_forwards]"
-          style={{ '--tw-animate-name': 'slideUp' }}
+          className="fixed bottom-0 left-0 right-0 z-[9998] p-4 sm:p-6 animate-slide-up"
         >
           <div className="max-w-5xl mx-auto bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl
                           flex flex-col lg:flex-row lg:items-center gap-5 p-5 sm:p-6">

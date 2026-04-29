@@ -35,6 +35,26 @@
     <meta name="geo.region" content="IT-LE" />
     <meta name="geo.placename" content="Leverano, Lecce, Puglia" />
 
+    <!--
+      Google Consent Mode v2 — DEVE stare prima di qualsiasi script GA/Ads.
+      Imposta tutto su "denied" di default: nessun dato raccolto finché
+      l'utente non accetta esplicitamente dal banner cookie.
+    -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('consent', 'default', {
+        analytics_storage:  'denied',
+        ad_storage:         'denied',
+        ad_user_data:       'denied',
+        ad_personalization: 'denied',
+        wait_for_update:    500,
+        region:             ['IT', 'EU'],
+      });
+      gtag('set', 'ads_data_redaction', true);
+      gtag('set', 'url_passthrough', false);
+    </script>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
